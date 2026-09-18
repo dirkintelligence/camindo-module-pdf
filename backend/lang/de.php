@@ -1,0 +1,5 @@
+<?php
+return [
+    'module_label'       => 'PDF',
+    'module_description' => 'PDF-Dokumente aus Templates (CMS:PDF_PAGE, PDF_FONT, PDF_TEXT, PDF_PRINT)',
+];

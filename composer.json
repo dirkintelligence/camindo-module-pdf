@@ -1,0 +1,16 @@
+{
+    "name": "camindo/module-pdf",
+    "description": "camindo CMS module: PDF documents from frontend templates (CMS:PDF_* commands) based on tc-lib-pdf",
+    "type": "camindo-module",
+    "license": "LGPL-3.0-or-later",
+    "keywords": ["camindo", "cms", "module", "pdf", "tcpdf"],
+    "require": {
+        "php": ">=8.2",
+        "ext-zlib": "*",
+        "camindo/core": "^9.1",
+        "tecnickcom/tc-lib-pdf": "^8.75"
+    },
+    "extra": {
+        "installer-name": "Pdf"
+    }
+}

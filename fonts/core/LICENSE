@@ -1,0 +1,19 @@
+Core 14 AFM files - Copyright (c) 1985, 1987, 1989, 1990, 1997 Adobe Systems
+Incorporated. All Rights Reserved.
+
+The metrics in this directory (*.json) are derived from the Adobe Core 14 AFM
+files, which Adobe distributes with the following terms (from the original
+Core14_AFMs.zip):
+
+    This file and the 14 PostScript(R) AFM files it accompanies may be used,
+    copied, and distributed for any purpose and without charge, with or without
+    modification, provided that all copyright notices are retained; that the AFM
+    files are not distributed without this file; that all modifications to this
+    file or any of the AFM files are prominently noted in the modified file(s);
+    and that this paragraph is not modified. Adobe Systems has no responsibility
+    or obligation to support the use of the AFM files.
+
+Modification: the AFM files were converted to the JSON format of
+tc-lib-pdf-font (https://github.com/tecnickcom/tc-lib-pdf-font); the JSON files
+carry only the metrics, this file keeps the copyright notice for all of them.
+Helvetica and Times are trademarks of Linotype-Hell AG and/or its subsidiaries.
