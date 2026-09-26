@@ -7,7 +7,7 @@
     "require": {
         "php": ">=8.2",
         "ext-zlib": "*",
-        "camindo/core": "^9.1",
+        "camindo/core": "^9.0",
         "tecnickcom/tc-lib-pdf": "^8.75"
     },
     "extra": {

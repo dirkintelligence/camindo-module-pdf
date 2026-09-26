@@ -7,9 +7,10 @@ return [
     'type'        => 'pdf',
     'label'       => '#pdf.module_label',
     'description' => '#pdf.module_description',
+    'icon'        => 'newsmode',
     'listed'      => false,
     'access'      => [],
-    'requires'    => ['core' => '^9.1', 'php' => ['zlib']],
+    'requires'    => ['core' => '^9.0', 'php' => ['zlib']],
     'commands'    => 'commands.php',
     'services'    => ['pdf' => 'Camindo\\Modules\\Pdf\\CmsPdf'],
 ];
