@@ -1,5 +1,0 @@
-<?php
-return [
-    'module_label'       => 'PDF',
-    'module_description' => '템플릿으로 만드는 PDF 문서(CMS:PDF_PAGE, PDF_FONT, PDF_TEXT, PDF_PRINT)',
-];

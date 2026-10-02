@@ -1,5 +1,0 @@
-<?php
-return [
-    'module_label'       => 'PDF',
-    'module_description' => 'مستندات PDF من القوالب (CMS:PDF_PAGE وPDF_FONT وPDF_TEXT وPDF_PRINT)',
-];
