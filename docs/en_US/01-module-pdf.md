@@ -5,7 +5,7 @@ document page by page - optionally on top of a PDF layout template - with text b
 HTML, images, lines, rectangles and tables, and send it to the browser. Based on
 [tc-lib-pdf](https://github.com/tecnickcom/tc-lib-pdf), the successor of TCPDF.
 
-```
+```cms
 (CMS:PDF_INIT colorspace=CMYK margins=25,20,30,20)
 (CMS:PDF_COLOR brand rgb=#0066FF cmyk=100,60,0,0)
 (CMS:PDF_META title="Invoice 4711" author="ACME Ltd.")
@@ -23,9 +23,20 @@ HTML, images, lines, rectangles and tables, and send it to the browser. Based on
 (CMS:PDF_PRINT invoice-4711.pdf)
 ```
 
-Further chapters:
+## Contents
 
-- [Commands](./02-commands.md) – all `(CMS:PDF_*)` commands with their parameters
+1. Add-on module PDF (this page)
+   - [Installation](#installation)
+   - [Directories](#directories-varmodulespdf) – PDF templates, fonts, color profiles
+   - [Conventions](#conventions) – units, parameters, colors
+   - [Errors](#errors)
+   - [How the module hooks into the template compiler](#how-the-module-hooks-into-the-template-compiler)
+   - [License](#license)
+2. [Commands](./02-commands.md) – all `(CMS:PDF_*)` commands with their parameters
+   - [Document](./02-commands.md#document)
+   - [Font and colors](./02-commands.md#font-and-colors)
+   - [Content](./02-commands.md#content) – text, HTML, images, lines, rectangles
+   - [Tables](./02-commands.md#tables)
 
 ## Installation
 
@@ -36,7 +47,7 @@ php Core/cron/camindo.php component install Pdf --activate
 
 `composer require` puts the module into `Modules/Pdf/` and tc-lib-pdf into `vendor/`;
 `component install` creates `var/modules/pdf/{fonts,layouts,profiles}` and copies the 14 standard
-PDF fonts to `var/modules/pdf/fonts/core/`. Requires PHP 8.2 and the `zlib` extension.
+PDF fonts to `var/modules/pdf/fonts/core/`. Requires PHP 8.3 and the `zlib` extension.
 
 ## Directories (`var/modules/pdf/`)
 

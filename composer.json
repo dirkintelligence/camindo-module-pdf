@@ -5,9 +5,9 @@
     "license": "LGPL-3.0-or-later",
     "keywords": ["camindo", "cms", "module", "pdf", "tcpdf"],
     "require": {
-        "php": ">=8.2",
+        "php": ">=8.3",
         "ext-zlib": "*",
-        "camindo/core": "^9.0",
+        "camindo/cms": "^9.0",
         "tecnickcom/tc-lib-pdf": "^8.75"
     },
     "extra": {

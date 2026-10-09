@@ -11,7 +11,7 @@ composer require camindo/module-pdf
 php Core/cron/camindo.php component install Pdf --activate
 ```
 
-Requires PHP 8.2 and the `zlib` extension.
+Requires PHP 8.3 and the `zlib` extension.
 
 ## Manual
 
