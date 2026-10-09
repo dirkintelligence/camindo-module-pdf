@@ -1,10 +1,10 @@
 <?php
 /**
- * Installer des Moduls Pdf: legt var/modules/pdf/{fonts,layouts,profiles} an und kopiert die
- * mitgelieferten Standardschriften (fonts/core) dorthin. Keine Datenbank.
+ * Installer of the Pdf module: creates var/modules/pdf/{fonts,layouts,profiles} and copies the
+ * bundled standard fonts (fonts/core) there. No database.
  *
- * Deinstallieren lässt die Verzeichnisse stehen - dort liegen projekteigene Vorlagen
- * und Schriften; mit --purge werden sie entfernt.
+ * Uninstalling leaves the directories in place - they hold project-specific templates
+ * and fonts; --purge removes them.
  */
 namespace Camindo\Modules\Pdf\Install;
 
@@ -29,7 +29,7 @@ class Installer implements ComponentInstallerInterface {
 
     public function migrate(string $from, string $to, InstallContext $ctx): void
     {
-        // Schriften nachziehen, falls ein Update welche mitbringt
+        // Pull in fonts if an update brings any
         $this->copyCoreFonts($ctx, (string)$ctx->config->get('paths.var_dir'));
     }
 
@@ -54,8 +54,8 @@ class Installer implements ComponentInstallerInterface {
     }
 
     /**
-     * fonts/core des Moduls nach var/modules/pdf/fonts/core - vorhandene Dateien werden
-     * überschrieben (das sind die mitgelieferten, keine projekteigenen).
+     * Copies the module's fonts/core to var/modules/pdf/fonts/core - existing files are
+     * overwritten (these are the bundled ones, not project-specific).
      */
     private function copyCoreFonts(InstallContext $ctx, string $varDir): int
     {

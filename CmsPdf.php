@@ -1,59 +1,59 @@
 <?php
 /**
- * Laufzeit der (CMS:PDF_*)-Befehle - PDF-Dokumente aus Frontend-Templates.
+ * Runtime of the (CMS:PDF_*) commands - PDF documents from frontend templates.
  *
- * Ein Template baut ein PDF Seite für Seite auf und schickt es an den Browser:
+ * A template builds a PDF page by page and sends it to the browser:
  *
- *     (CMS:PDF_INIT colorspace=CMYK margins=20,20,30,20)   Dokumentvorgaben (optional)
- *     (CMS:PDF_COLOR blau rgb=#0066FF cmyk=100,60,0,0)     Farbfeld
- *     (CMS:PDF_PAGE brief.pdf)                             Seite auf der Layout-Vorlage
- *     (CMS:PDF_FONT helvetica style=B size=14)             Schrift für die folgenden Texte
- *     (CMS:PDF_TEXT "Hallo Welt" x=20 y=40 color=blau)     Textblock (mm, von links oben)
+ *     (CMS:PDF_INIT colorspace=CMYK margins=20,20,30,20)   document defaults (optional)
+ *     (CMS:PDF_COLOR blau rgb=#0066FF cmyk=100,60,0,0)     color field
+ *     (CMS:PDF_PAGE brief.pdf)                             page on the layout template
+ *     (CMS:PDF_FONT helvetica style=B size=14)             font for the following texts
+ *     (CMS:PDF_TEXT "Hallo Welt" x=20 y=40 color=blau)     text block (mm, from top left)
  *     (CMS:PDF_TABLE 40,80,30) (CMS:PDF_ROW) (CMS:PDF_CELL "…") … (CMS:PDF_TABLE_END)
- *     (CMS:PDF_META title="Angebot" author="…")            Dokumenteigenschaften
- *     (CMS:PDF_PRINT angebot.pdf)                          ausgeben - beendet den Request
+ *     (CMS:PDF_META title="Angebot" author="…")            document properties
+ *     (CMS:PDF_PRINT angebot.pdf)                          output - ends the request
  *
- * Diese Klasse wird von Page über LazyServicesTrait erst beim ersten (CMS:PDF_*)-Befehl
- * geladen (install/settings.php['services']); die Befehlsdefinitionen stehen in
- * commands.php, die Befehlsreferenz in README.md. Die Bibliothek tc-lib-pdf wird erst
- * mit der ersten Seite angefasst.
+ * This class is loaded by Page via LazyServicesTrait only at the first (CMS:PDF_*) command
+ * (install/settings.php['services']); the command definitions are in
+ * commands.php, the command reference in README.md. The tc-lib-pdf library is only
+ * touched with the first page.
  *
- * VERZEICHNISSE (var/modules/pdf/)
- * --------------------
- *     layouts/    PDF-Vorlagen, deren Seiten PDF_PAGE als Hintergrund übernimmt
- *     fonts/      Schriften im Format von tc-lib-pdf-font ({name}.json [+ .z, .ctg.z]);
- *                 der Installer legt die 14 PDF-Standardschriften nach fonts/core/.
- *                 Eine TrueType-/OpenType-Datei {name}.ttf|.otf im Verzeichnis wird beim
- *                 ersten (CMS:PDF_FONT {name}) automatisch konvertiert - der Name der
- *                 konvertierten Schrift ergibt sich aus der Datei selbst (Log 'pdf').
- *     profiles/   ICC-Profile für PDF_INIT icc_profile= (Output Intent)
+ * DIRECTORIES (var/modules/pdf/)
+ * ------------------------------
+ *     layouts/    PDF templates whose pages PDF_PAGE uses as background
+ *     fonts/      fonts in the format of tc-lib-pdf-font ({name}.json [+ .z, .ctg.z]);
+ *                 the installer places the 14 standard PDF fonts in fonts/core/.
+ *                 A TrueType/OpenType file {name}.ttf|.otf in the directory is converted
+ *                 automatically at the first (CMS:PDF_FONT {name}) - the name of the
+ *                 converted font comes from the file itself (log 'pdf').
+ *     profiles/   ICC profiles for PDF_INIT icc_profile= (output intent)
  *
- * KOORDINATEN UND FARBEN
- * --------------------
- * Alle Maße sind Millimeter, gemessen von der linken oberen Ecke; Schriftgrößen sind
- * Punkt. Farben sind benannte Farbfelder (PDF_COLOR) mit RGB- und/oder CMYK-Wert; der
- * Farbraum des Dokuments (PDF_INIT colorspace) entscheidet, welcher Wert ins PDF geht -
- * fehlt er, wird aus dem anderen umgerechnet. Wo ein Befehl eine Farbe erwartet, geht
- * statt des Namens auch '#rrggbb' oder 'c,m,y,k' (0-100).
+ * COORDINATES AND COLORS
+ * ----------------------
+ * All dimensions are millimeters, measured from the top left corner; font sizes are
+ * points. Colors are named color fields (PDF_COLOR) with an RGB and/or CMYK value; the
+ * color space of the document (PDF_INIT colorspace) decides which value goes into the PDF -
+ * if it is missing, it is converted from the other one. Where a command expects a color,
+ * '#rrggbb' or 'c,m,y,k' (0-100) may be used instead of the name.
  *
- * Ein "Cursor" (aktuelle Schreibposition) rückt nach jedem Textblock, Bild und jeder
- * Tabelle unter deren Unterkante und steht nach PDF_PAGE am oberen Rand: Befehle ohne
- * y= schreiben dort, ohne x= am linken Rand.
+ * A "cursor" (current writing position) moves below the bottom edge after every text block, image and
+ * table, and is at the top margin after PDF_PAGE: commands without
+ * y= write there, without x= at the left margin.
  *
- * AUSGABE
- * --------------------
- * Ab der ersten Seite wird die Template-Ausgabe gepuffert, damit der Whitespace
- * zwischen den Befehlen nicht vor dem PDF beim Browser landet. PDF_PRINT verwirft den
- * Puffer, sendet die Header und das Dokument und beendet den Request mit exit - wie
- * die Befehle mit php_suffix 'include_and_stop'. Was das Template VOR der ersten
- * Seite ausgibt, ist bereits unterwegs; PDF_PRINT meldet dann "headers already sent".
+ * OUTPUT
+ * ------
+ * From the first page on, the template output is buffered, so that the whitespace
+ * between the commands does not reach the browser before the PDF. PDF_PRINT discards the
+ * buffer, sends the headers and the document and ends the request with exit - as
+ * the commands with php_suffix 'include_and_stop' do. Anything the template outputs BEFORE the first
+ * page is already on its way; PDF_PRINT then reports "headers already sent".
  *
- * FEHLER
- * --------------------
- * Fehler (fehlende Vorlage, unbekannte Schrift oder Farbe, Ausnahmen der Bibliothek)
- * gehen an Cms::error() - ein (CMS:MESSAGE) zeigt sie - und ins Log
- * var/log/{datum}_pdf.log. Das Template läuft weiter; ein PDF_PRINT ohne Dokument tut
- * nichts, die Meldungen erreichen so den Browser.
+ * ERRORS
+ * ------
+ * Errors (missing template, unknown font or color, library exceptions)
+ * go to Cms::error() - a (CMS:MESSAGE) shows them - and into the log
+ * var/log/{date}_pdf.log. The template continues; a PDF_PRINT without a document does
+ * nothing, so the messages reach the browser.
  *
  * @see commands.php                          Befehlsdefinitionen
  * @see README.md                             Befehlsreferenz
@@ -76,16 +76,16 @@ class CmsPdf {
 
     private const UNIT = 'mm';
     private const LOG = 'pdf';
-    private const DEFAULT_LINE_WIDTH = 0.2;    // mm, Linien und Rahmen ohne Angabe
+    private const DEFAULT_LINE_WIDTH = 0.2;    // mm, lines and borders without a value
 
     private ?Tcpdf $pdf = null;
-    private int $pages = 0;             // angelegte Seiten des laufenden Dokuments
-    private array $sources = [];        // Layout-Datei => Source-Id in tc-lib-pdf
-    private int $obLevel = 0;           // Pufferstand vor dem Dokument, siehe discardOutput()
-    private array $lastPage = [];       // Parameter des letzten PDF_PAGE (Folgeseiten der Tabellen)
-    private float $cursorY = 0;         // Schreibposition, siehe Klassenkommentar
+    private int $pages = 0;             // pages created in the current document
+    private array $sources = [];        // layout file => source id in tc-lib-pdf
+    private int $obLevel = 0;           // buffer level before the document, see discardOutput()
+    private array $lastPage = [];       // parameters of the last PDF_PAGE (following pages of tables)
+    private float $cursorY = 0;         // writing position, see class comment
 
-    // Dokumentvorgaben (PDF_INIT)
+    // Document defaults (PDF_INIT)
     private string $colorspace = 'RGB';
     private string $iccFile = '';
     private string $iccName = '';
@@ -93,21 +93,21 @@ class CmsPdf {
     private string $orientation = 'P';
     private array $margins = ['T' => 20.0, 'R' => 20.0, 'B' => 20.0, 'L' => 20.0];
     private array $meta = [];
-    private array $pageMargins = ['T' => 20.0, 'R' => 20.0, 'B' => 20.0, 'L' => 20.0]; // der aktuellen Seite
+    private array $pageMargins = ['T' => 20.0, 'R' => 20.0, 'B' => 20.0, 'L' => 20.0]; // of the current page
 
-    // Aktuelle Schrift - gilt für alle folgenden Texte, auch über Seiten hinweg
+    // Current font - applies to all following texts, also across pages
     private string $fontName = 'helvetica';
     private string $fontStyle = '';
     private float $fontSize = 12;
-    private array $fontAlias = [];      // angeforderter Name => Name der konvertierten Schrift
+    private array $fontAlias = [];      // requested name => name of the converted font
 
-    // Farbfelder (PDF_COLOR) und eingestellte Farben (Farbangabe, siehe colorModel())
+    // Color fields (PDF_COLOR) and set colors (color specification, see colorModel())
     private array $palette = [];        // name => ['rgb' => ?Rgb, 'cmyk' => ?Cmyk]
     private ?string $textColor = null;
     private ?string $fillColor = null;
     private ?string $lineColor = null;
 
-    // Laufende Tabelle (PDF_TABLE … PDF_TABLE_END), siehe cmsPdfTable()
+    // Current table (PDF_TABLE … PDF_TABLE_END), see cmsPdfTable()
     private ?array $table = null;
 
     public function __construct(
@@ -118,10 +118,10 @@ class CmsPdf {
     {
     }
 
-    // Dokument
+    // Document
     // ====================
 
-    // CMS:PDF_INIT - Vorgaben für das Dokument, vor der ersten Seite
+    // CMS:PDF_INIT - defaults for the document, before the first page
     public function cmsPdfInit(array $p): void
     {
         if ($this->pdf !== null) {
@@ -150,7 +150,7 @@ class CmsPdf {
         if (isset($p['margins']))     $this->margins = $this->sides((string)$p['margins'], $this->margins);
     }
 
-    // CMS:PDF_META - Dokumenteigenschaften
+    // CMS:PDF_META - document properties
     public function cmsPdfMeta(array $p): void
     {
         foreach (['author', 'title', 'subject', 'keywords', 'creator'] as $key) {
@@ -158,7 +158,7 @@ class CmsPdf {
         }
     }
 
-    // CMS:PDF_PAGE - neue Seite, wahlweise auf einer Seite einer Layout-Vorlage
+    // CMS:PDF_PAGE - new page, optionally on a page of a layout template
     public function cmsPdfPage(array $p): void
     {
         if ($this->table !== null) {
@@ -173,7 +173,7 @@ class CmsPdf {
         }
     }
 
-    // CMS:PDF_PRINT - Dokument an den Browser senden und den Request beenden
+    // CMS:PDF_PRINT - send the document to the browser and end the request
     public function cmsPdfPrint(array $p): void
     {
         if ($this->pdf === null || $this->pages < 1) {
@@ -186,8 +186,8 @@ class CmsPdf {
         }
         try {
             $filename = $this->outputFilename((string)($p['filename'] ?? ''));
-            // download: leer/false = inline, true = Download unter 'filename',
-            // sonst Download unter dem angegebenen Namen
+            // download: empty/false = inline, true = download as 'filename',
+            // otherwise download under the given name
             $download = trim((string)($p['download'] ?? ''));
             $attachment = false;
             if ($download !== '' && !in_array(strtolower($download), ['0', 'false', 'no', 'off'], true)) {
@@ -208,7 +208,7 @@ class CmsPdf {
             return;
         }
 
-        // Bisherige Template-Ausgabe (Whitespace zwischen den Befehlen) verwerfen
+        // Discard the template output so far (whitespace between the commands)
         $this->discardOutput();
         if (headers_sent($file, $line)) {
             $this->error("CMS:PDF_PRINT: headers already sent ($file:$line) - no output before CMS:PDF_PAGE allowed.");
@@ -223,10 +223,10 @@ class CmsPdf {
         exit;
     }
 
-    // Schrift und Farben
+    // Font and colors
     // ====================
 
-    // CMS:PDF_FONT - Schrift für die folgenden Texte
+    // CMS:PDF_FONT - font for the following texts
     public function cmsPdfFont(array $p): void
     {
         $name = strtolower(trim((string)($p['font'] ?? '')));
@@ -237,12 +237,12 @@ class CmsPdf {
             $this->error('CMS:PDF_FONT: invalid font name "' . $name . '".');
             return;
         }
-        // tc-lib-pdf: B fett, I kursiv, U unterstrichen, D durchgestrichen, O überstrichen
+        // tc-lib-pdf: B bold, I italic, U underlined, D strikethrough, O overlined
         $style = isset($p['style']) ? preg_replace('/[^BIUDO]/', '', strtoupper((string)$p['style'])) : $this->fontStyle;
         $size  = isset($p['size']) && (float)$p['size'] > 0 ? (float)$p['size'] : $this->fontSize;
 
-        // Ohne Seite nur merken - PDF_PAGE wendet die Schrift an. Sonst erst anwenden,
-        // dann übernehmen: eine unbekannte Schrift lässt die bisherige in Kraft.
+        // Without a page only remember it - PDF_PAGE applies the font. Otherwise apply first,
+        // then adopt it: an unknown font keeps the previous one in effect.
         if ($this->pages > 0) {
             try {
                 $this->applyFont($name, $style, $size);
@@ -257,7 +257,7 @@ class CmsPdf {
         $this->fontSize  = $size;
     }
 
-    // CMS:PDF_COLOR - Farbfeld mit RGB- und/oder CMYK-Wert
+    // CMS:PDF_COLOR - color field with RGB and/or CMYK value
     public function cmsPdfColor(array $p): void
     {
         $name = strtolower(trim((string)($p['name'] ?? '')));
@@ -274,7 +274,7 @@ class CmsPdf {
         $this->palette[$name] = ['rgb' => $rgb, 'cmyk' => $cmyk];
     }
 
-    // CMS:PDF_TEXT_COLOR / PDF_FILL_COLOR / PDF_LINE_COLOR - Farbe für die folgenden Befehle
+    // CMS:PDF_TEXT_COLOR / PDF_FILL_COLOR / PDF_LINE_COLOR - color for the following commands
     public function cmsPdfTextColor(array $p): void
     {
         $this->textColor = $this->checkedColor((string)($p['name'] ?? ''), 'CMS:PDF_TEXT_COLOR');
@@ -290,10 +290,10 @@ class CmsPdf {
         $this->lineColor = $this->checkedColor((string)($p['name'] ?? ''), 'CMS:PDF_LINE_COLOR');
     }
 
-    // Inhalte
+    // Content
     // ====================
 
-    // CMS:PDF_TEXT - Textblock mit Umbruch innerhalb der Breite
+    // CMS:PDF_TEXT - text block with line wrapping within the width
     public function cmsPdfText(array $p): void
     {
         if (!$this->requirePage('CMS:PDF_TEXT')) return;
@@ -328,7 +328,7 @@ class CmsPdf {
         }
     }
 
-    // CMS:PDF_HTML - HTML-Block (Umbruch, Seitenumbruch durch tc-lib-pdf)
+    // CMS:PDF_HTML - HTML block (wrapping and page breaks by tc-lib-pdf)
     public function cmsPdfHtml(array $p): void
     {
         if (!$this->requirePage('CMS:PDF_HTML')) return;
@@ -341,14 +341,14 @@ class CmsPdf {
             if ($width <= 0) $width = $this->pageWidth() - $this->pageMargins['R'] - $x;
             $this->pdf->page->addContent($this->colorOp($this->textColor, false));
             $this->pdf->addHTMLCell($html, $x, $y, $width);
-            // tc-lib-pdf verrät die Höhe des Blocks nicht - der Cursor bleibt stehen
+            // tc-lib-pdf does not report the height of the block - the cursor stays put
         }
         catch (\Throwable $e) {
             $this->error('CMS:PDF_HTML: ' . $e->getMessage());
         }
     }
 
-    // CMS:PDF_IMAGE - Bild aus dem Medienverzeichnis, wahlweise verlinkt
+    // CMS:PDF_IMAGE - image from the media directory, optionally linked
     public function cmsPdfImage(array $p): void
     {
         if (!$this->requirePage('CMS:PDF_IMAGE')) return;
@@ -365,7 +365,7 @@ class CmsPdf {
             $width  = (float)($p['width'] ?? 0);
             $height = (float)($p['height'] ?? 0);
             if ($width <= 0 && $height <= 0) {
-                $width = $px['width'] * 25.4 / 72;   // Pixel als Punkt (72 dpi)
+                $width = $px['width'] * 25.4 / 72;   // pixels as points (72 dpi)
             }
             if ($width <= 0)  $width  = $ratio > 0 ? $height / $ratio : $height;
             if ($height <= 0) $height = $width * $ratio;
@@ -383,7 +383,7 @@ class CmsPdf {
         }
     }
 
-    // CMS:PDF_LINE - Linie
+    // CMS:PDF_LINE - line
     public function cmsPdfLine(array $p): void
     {
         if (!$this->requirePage('CMS:PDF_LINE')) return;
@@ -401,7 +401,7 @@ class CmsPdf {
         }
     }
 
-    // CMS:PDF_RECT - Rechteck, gefüllt und/oder umrandet
+    // CMS:PDF_RECT - rectangle, filled and/or outlined
     public function cmsPdfRect(array $p): void
     {
         if (!$this->requirePage('CMS:PDF_RECT')) return;
@@ -422,17 +422,17 @@ class CmsPdf {
         }
     }
 
-    // Tabellen
+    // Tables
     // ====================
     //
-    // PDF_TABLE sammelt, PDF_ROW/PDF_CELL füllen, PDF_TABLE_END zeichnet (renderTable()).
-    // Jede Zelle merkt sich die Schrift, die bei ihrem PDF_CELL eingestellt war - so
-    // bekommt die Kopfzeile ihre fette Schrift mit einem PDF_FONT davor. Zeilen werden
-    // nie geteilt: passt eine Zeile nicht mehr auf die Seite, beginnt sie auf der
-    // nächsten (Folgeseite wie das letzte PDF_PAGE bzw. next_layout/next_page), und die
-    // Kopfzeilen (is_header) werden dort wiederholt.
+    // PDF_TABLE collects, PDF_ROW/PDF_CELL fill, PDF_TABLE_END draws (renderTable()).
+    // Each cell remembers the font that was set at its PDF_CELL - so
+    // the header row gets its bold font with a PDF_FONT before it. Rows are never
+    // split: if a row no longer fits on the page, it starts on the
+    // next one (following page as the last PDF_PAGE or next_layout/next_page), and the
+    // header rows (is_header) are repeated there.
 
-    // CMS:PDF_TABLE - Tabelle beginnen
+    // CMS:PDF_TABLE - start a table
     public function cmsPdfTable(array $p): void
     {
         if (!$this->requirePage('CMS:PDF_TABLE')) return;
@@ -463,7 +463,7 @@ class CmsPdf {
         ];
     }
 
-    // CMS:PDF_ROW - neue Zeile
+    // CMS:PDF_ROW - new row
     public function cmsPdfRow(array $p): void
     {
         if ($this->table === null) {
@@ -478,7 +478,7 @@ class CmsPdf {
         ];
     }
 
-    // CMS:PDF_CELL - Zelle der aktuellen Zeile
+    // CMS:PDF_CELL - cell of the current row
     public function cmsPdfCell(array $p): void
     {
         if ($this->table === null || $this->table['rows'] === []) {
@@ -520,7 +520,7 @@ class CmsPdf {
         unset($row);
     }
 
-    // CMS:PDF_TABLE_END - Tabelle zeichnen
+    // CMS:PDF_TABLE_END - draw the table
     public function cmsPdfTableEnd(array $p): void
     {
         if ($this->table === null) {
@@ -538,19 +538,19 @@ class CmsPdf {
     }
 
     /**
-     * Tabelle zeichnen: Zeilenhöhen messen, bei Bedarf umbrechen, Zellen ausgeben.
+     * Draw the table: measure row heights, break pages if needed, output cells.
      */
     private function renderTable(array $table): void
     {
         $pdf = $this->pdf;
         $y = $table['y'];
-        $headers = [];       // bereits gezeichnete Kopfzeilen, auf Folgeseiten wiederholt
+        $headers = [];       // header rows already drawn, repeated on following pages
         $rowsOnPage = 0;
 
         foreach ($table['rows'] as $row) {
             $layout = $this->layoutRow($table, $row);
             if ($rowsOnPage > 0 && $y + $layout['height'] > $this->pageHeight() - $this->pageMargins['B']) {
-                // Folgeseite, dann Kopfzeilen wiederholen
+                // following page, then repeat the header rows
                 $this->addPage($table['next'] + $this->lastPage);
                 $y = $this->cursorY;
                 $rowsOnPage = 0;
@@ -566,13 +566,13 @@ class CmsPdf {
             if ($row['header']) $headers[] = $layout;
         }
         $this->cursorY = $y;
-        // Schrift der letzten Zelle steht noch im Inhalt - eingestellte Schrift wieder setzen
+        // the font of the last cell is still in the content - set the configured font again
         $this->applyFont($this->fontName, $this->fontStyle, $this->fontSize);
     }
 
     /**
-     * Zeile vermessen: je Zelle die eingepasste Schrift (fit) und die Höhe; das
-     * Ergebnis ist die Zeile plus 'height' und je Zelle 'font_fit' / 'inner_width'.
+     * Measure a row: per cell the fitted font (fit) and the height; the
+     * result is the row plus 'height' and per cell 'font_fit' / 'inner_width'.
      */
     private function layoutRow(array $table, array $row): array
     {
@@ -591,7 +591,7 @@ class CmsPdf {
                 $pdf->font->popLastFont();
             }
             else {
-                // leere Zelle: eine Zeilenhöhe der Schrift
+                // empty cell: one line height of the font
                 $this->insertFont(...$cell['font_fit']);
                 $cellHeight += $pdf->toUnit($pdf->font->getCurrentFont()['height']);
                 $pdf->font->popLastFont();
@@ -604,8 +604,8 @@ class CmsPdf {
     }
 
     /**
-     * Schrift einer Zelle nach 'fit' einpassen: [name, style, size, spacing, stretching].
-     * Ziel ist eine Zeile in der Innenbreite; was auch damit nicht passt, bricht um.
+     * Fit the font of a cell according to 'fit': [name, style, size, spacing, stretching].
+     * The goal is one line within the inner width; whatever does not fit even then wraps.
      */
     private function fitFont(array $cell, float $inner): array
     {
@@ -628,12 +628,12 @@ class CmsPdf {
                 $result[2] = max($min, $size * $ratio);
                 break;
             case 'spacing':
-                // Zeichenabstand in Punkt, höchstens 15 % der Schriftgröße enger - reicht
-                // das nicht, bleibt der Abstand normal und der Text bricht lesbar um
+                // character spacing in points, at most 15 % of the font size tighter - if
+                // that is not enough, the spacing stays normal and the text wraps legibly
                 $result[3] = $this->fitSpacing($width, $inner, $size, $chars);
                 break;
             case 'scale':
-                // Schriftgröße und Abstand teilen sich die Verkleinerung
+                // font size and spacing share the reduction
                 $newSize = max($min, $size * sqrt($ratio));
                 $newWidth = $width * $newSize / $size;
                 $result[2] = $newSize;
@@ -649,8 +649,8 @@ class CmsPdf {
     }
 
     /**
-     * Zeichenabstand (Punkt, negativ), der $width mm auf $inner mm bringt - höchstens
-     * 15 % der Schriftgröße enger; 0, wenn das nicht reicht.
+     * Character spacing (points, negative) that brings $width mm to $inner mm - at most
+     * 15 % of the font size tighter; 0 if that is not enough.
      */
     private function fitSpacing(float $width, float $inner, float $size, int $chars): float
     {
@@ -659,7 +659,7 @@ class CmsPdf {
     }
 
     /**
-     * Eine vermessene Zeile bei $y zeichnen; liefert die Unterkante.
+     * Draw a measured row at $y; returns the bottom edge.
      */
     private function drawRow(array $table, array $row, float $y): float
     {
@@ -696,23 +696,23 @@ class CmsPdf {
         return $y + $h;
     }
 
-    // Hilfsfunktionen: Dokument und Seite
+    // Helper functions: document and page
     // ====================
 
     /**
-     * Das laufende Dokument - beim ersten Aufruf angelegt. Ab hier wird die
-     * Template-Ausgabe gepuffert (siehe Klassenkommentar).
+     * The current document - created at the first call. From here on the
+     * template output is buffered (see class comment).
      */
     private function document(): Tcpdf
     {
         if ($this->pdf === null) {
             $fontsDir = $this->varDir() . '/fonts';
-            // tc-lib-pdf-font sucht seine Definitionen unter K_PATH_FONTS (und dessen
-            // Unterverzeichnissen) - eine Konstante, also einmal je Request
+            // tc-lib-pdf-font looks up its definitions under K_PATH_FONTS (and its
+            // subdirectories) - a constant, so once per request
             if (!defined('K_PATH_FONTS')) {
                 define('K_PATH_FONTS', $fontsDir);
             }
-            // Lesbare Verzeichnisse für tc-lib-pdf (Schriften, Vorlagen, Profile, Medien)
+            // readable directories for tc-lib-pdf (fonts, templates, profiles, media)
             $vendor = dirname((new \ReflectionClass(Tcpdf::class))->getFileName(), 3);
             $paths = array_values(array_filter(array_unique([
                 sys_get_temp_dir(), realpath(sys_get_temp_dir()) ?: '', $fontsDir, $this->varDir(),
@@ -727,7 +727,7 @@ class CmsPdf {
                 ))),
             ]);
             if ($this->iccFile !== '') {
-                // Bezeichner auch als /OutputCondition und /Info - sonst stünde dort "sRGB"
+                // identifier also as /OutputCondition and /Info - otherwise "sRGB" would be there
                 $this->pdf->setOutputIntent($this->iccName, $this->iccFile, $this->iccName, 'http://www.color.org', $this->iccName);
             }
             $this->pages = 0;
@@ -737,8 +737,8 @@ class CmsPdf {
     }
 
     /**
-     * Seite anlegen (PDF_PAGE und Folgeseiten der Tabellen): auf einer Layout-Seite
-     * oder leer, mit den Rändern aus PDF_INIT bzw. margins=.
+     * Create a page (PDF_PAGE and following pages of tables): on a layout page
+     * or empty, with the margins from PDF_INIT or margins=.
      */
     private function addPage(array $p): void
     {
@@ -773,7 +773,7 @@ class CmsPdf {
         $this->pageMargins = $margins;
         $this->cursorY = $margins['T'];
         $this->lastPage = $p;
-        // Schrift auf der neuen Seite wiederherstellen
+        // restore the font on the new page
         $this->applyFont($this->fontName, $this->fontStyle, $this->fontSize);
     }
 
@@ -796,15 +796,15 @@ class CmsPdf {
         return (float)$this->pdf->page->getPage()['height'];
     }
 
-    // Hilfsfunktionen: Schrift und Text
+    // Helper functions: font and text
     // ====================
 
     /**
-     * Schrift auf den Font-Stapel legen (ohne Ausgabe); eine unbekannte Schrift wird
-     * einmal als TTF/OTF im Fonts-Verzeichnis gesucht und konvertiert.
+     * Push the font onto the font stack (without output); an unknown font is looked up
+     * once as TTF/OTF in the fonts directory and converted.
      *
-     * @return array  Font-Daten von tc-lib-pdf ('out' = Operator für den Seiteninhalt)
-     * @throws \RuntimeException  Schrift nicht vorhanden
+     * @return array  font data from tc-lib-pdf ('out' = operator for the page content)
+     * @throws \RuntimeException  font not present
      */
     private function insertFont(string $name, string $style, float $size, float $spacing = 0.0, float $stretching = 1.0): array
     {
@@ -825,7 +825,7 @@ class CmsPdf {
     }
 
     /**
-     * Schrift einstellen und den Operator in die Seite schreiben.
+     * Set the font and write the operator into the page.
      */
     private function applyFont(string $name, string $style, float $size): void
     {
@@ -834,8 +834,8 @@ class CmsPdf {
     }
 
     /**
-     * Textblock mit Umbruch als Seiteninhalt (ohne Rahmen/Füllung - die zeichnen die
-     * Aufrufer selbst); getLastCellBBox() liefert danach die belegte Fläche.
+     * Text block with wrapping as page content (without border/fill - the callers
+     * draw those themselves); getLastCellBBox() then returns the occupied area.
      */
     private function textCell(string $text, float $x, float $y, float $width, float $height, string $align, string $valign): string
     {
@@ -846,10 +846,10 @@ class CmsPdf {
     }
 
     /**
-     * {name}.ttf|.otf aus dem Fonts-Verzeichnis nach tc-lib-pdf-font konvertieren
-     * (Ausgabe {fontname}.json + .z + .ctg.z im selben Verzeichnis).
+     * Convert {name}.ttf|.otf from the fonts directory to tc-lib-pdf-font
+     * (output {fontname}.json + .z + .ctg.z in the same directory).
      *
-     * @return string|null  Name der konvertierten Schrift, null ohne Quelldatei
+     * @return string|null  name of the converted font, null without a source file
      */
     private function convertFont(string $name): ?string
     {
@@ -864,19 +864,19 @@ class CmsPdf {
         }
         if ($source === null) return null;
 
-        // encoding_id 10: vollständige Unicode-Tabelle (auch Zeichen über U+FFFF)
+        // encoding_id 10: full Unicode table (also characters above U+FFFF)
         $import = new FontImport($source, $dir . '/', 'TrueTypeUnicode', '', 32, 3, 10);
         $converted = $import->getFontName();
         $this->system->log(self::LOG, 'font "' . basename($source) . '" converted - use (CMS:PDF_FONT ' . $converted . ')');
         return $converted;
     }
 
-    // Hilfsfunktionen: Farben
+    // Helper functions: colors
     // ====================
 
     /**
-     * Farbangabe prüfen (Farbfeld, '#rrggbb' oder 'c,m,y,k'); null bei Fehler oder
-     * leerer Angabe (= Standardfarbe).
+     * Check a color specification (color field, '#rrggbb' or 'c,m,y,k'); null on error or
+     * empty specification (= default color).
      */
     private function checkedColor(string $value, string $command): ?string
     {
@@ -890,9 +890,9 @@ class CmsPdf {
     }
 
     /**
-     * Farboperator für den Seiteninhalt im Farbraum des Dokuments. Ohne Farbe Schwarz.
+     * Color operator for the page content in the color space of the document. Without a color, black.
      *
-     * @param bool $stroke  true: Linienfarbe (K/RG), false: Füll-/Textfarbe (k/rg)
+     * @param bool $stroke  true: line color (K/RG), false: fill/text color (k/rg)
      */
     private function colorOp(?string $value, bool $stroke): string
     {
@@ -912,8 +912,8 @@ class CmsPdf {
     }
 
     /**
-     * Farbmodell im Farbraum des Dokuments: Farbfeld (PDF_COLOR), '#rrggbb' oder
-     * 'c,m,y,k' (0-100). Fehlt der passende Wert im Farbfeld, wird umgerechnet.
+     * Color model in the color space of the document: color field (PDF_COLOR), '#rrggbb' or
+     * 'c,m,y,k' (0-100). If the matching value is missing in the color field, it is converted.
      */
     private function colorModel(string $value): ?ColorModel
     {
@@ -952,11 +952,11 @@ class CmsPdf {
         return new Cmyk(['cyan' => $c($m[1]), 'magenta' => $c($m[2]), 'yellow' => $c($m[3]), 'key' => $c($m[4])]);
     }
 
-    // Hilfsfunktionen: Parameter und Pfade
+    // Helper functions: parameters and paths
     // ====================
 
     /**
-     * Koordinate aus dem Parameter oder Vorgabe (Rand/Cursor) - '' zählt wie fehlend.
+     * Coordinate from the parameter or default (margin/cursor) - '' counts as missing.
      */
     private function coord(mixed $value, float $default): float
     {
@@ -964,8 +964,8 @@ class CmsPdf {
     }
 
     /**
-     * Vier Seitenwerte nach CSS-Art: "a" alle, "a,b" oben/unten und rechts/links,
-     * "a,b,c,d" oben, rechts, unten, links. Leer oder ungültig: Vorgabe.
+     * Four page values in CSS style: "a" all, "a,b" top/bottom and right/left,
+     * "a,b,c,d" top, right, bottom, left. Empty or invalid: default.
      */
     private function sides(string $value, array $default): array
     {
@@ -1007,8 +1007,8 @@ class CmsPdf {
     }
 
     /**
-     * Datei aus einem Unterverzeichnis von var/modules/pdf - nur ein Dateiname mit
-     * erlaubter Endung, keine Pfade.
+     * File from a subdirectory of var/modules/pdf - only a file name with an
+     * allowed extension, no paths.
      */
     private function varFile(string $sub, string $name, array $extensions): ?string
     {
@@ -1021,9 +1021,9 @@ class CmsPdf {
     }
 
     /**
-     * Bilddatei unterhalb des Medienverzeichnisses: absoluter Pfad (CMS:MEDIA
-     * subfield=file), Webpfad (subfield=path, '/media/…' mit ',name'-Zusatz) oder
-     * relativer Pfad. null, wenn die Datei fehlt oder außerhalb liegt.
+     * Image file below the media directory: absolute path (CMS:MEDIA
+     * subfield=file), web path (subfield=path, '/media/…' with a ',name' suffix) or
+     * relative path. null if the file is missing or lies outside.
      */
     private function mediaFile(string $value): ?string
     {
@@ -1035,7 +1035,7 @@ class CmsPdf {
             $path = $value;
         }
         elseif ($mediaUri !== '' && str_starts_with($value, $mediaUri . '/')) {
-            // ',name' vor der Endung ist Dekoration der URL (Cms::mediaUriName())
+            // ',name' before the extension is decoration of the URL (Cms::mediaUriName())
             $path = $mediaDir . preg_replace('/,[^\/,]*(\.[a-z0-9]+)$/i', '$1', substr($value, strlen($mediaUri)));
         }
         else {
@@ -1055,7 +1055,7 @@ class CmsPdf {
     }
 
     /**
-     * var/modules/pdf - Fonts, Layouts, Profile. Kleingeschrieben wie
+     * var/modules/pdf - fonts, layouts, profiles. Lowercase, like
      * var/extensions/{name} (Backend::extensionVarDir()).
      */
     private function varDir(): string
@@ -1064,8 +1064,8 @@ class CmsPdf {
     }
 
     /**
-     * Dateiname für Content-Disposition: nur Dateiname, Endung .pdf, ohne Zeichen,
-     * die den Header stören.
+     * File name for Content-Disposition: file name only, extension .pdf, without characters
+     * that disturb the header.
      */
     private function outputFilename(string $filename): string
     {
@@ -1078,7 +1078,7 @@ class CmsPdf {
     }
 
     /**
-     * Alle seit document() geöffneten Ausgabepuffer verwerfen.
+     * Discard all output buffers opened since document().
      */
     private function discardOutput(): void
     {

@@ -1,7 +1,7 @@
 <?php
-// Modul Pdf - (CMS:PDF_*)-Befehle für Frontend-Templates auf Basis von tc-lib-pdf.
-// Kein Backend (listed = false); die Befehle kommen aus commands.php, ihre Laufzeit
-// ist CmsPdf, die Page als $this->pdf nachlädt (docs/developers/06-templates.md).
+// Module Pdf - (CMS:PDF_*) commands for frontend templates, based on tc-lib-pdf.
+// No backend (listed = false); the commands come from commands.php, their runtime
+// is CmsPdf, which Page loads as $this->pdf (developer docs, chapter 06 (Template compiler)).
 return [
     'version'     => '1.0.0',
     'type'        => 'pdf',
