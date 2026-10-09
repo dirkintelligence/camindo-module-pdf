@@ -1,15 +1,15 @@
 <?php
 /**
- * Befehlsdefinitionen des Moduls Pdf - (CMS:PDF_*).
+ * Command definitions of the Pdf module - (CMS:PDF_*).
  *
- * Aufbau wie Core/Modules/Template/commands.php (dort ist jeder Schlüssel erklärt).
- * Der Parser mischt diese Datei über TemplateParserTrait::loadCommands() ein, weil
- * install/settings.php['commands'] sie nennt; das Objekt 'pdf' in 'method' stellt
- * settings.php['services'] bereit (Page::$lazyServices -> CmsPdf).
+ * Structure as in Core/Modules/Template/commands.php (every key is explained there).
+ * The parser merges this file in via TemplateParserTrait::loadCommands(), because
+ * install/settings.php['commands'] names it; the object 'pdf' in 'method' is provided by
+ * settings.php['services'] (Page::$lazyServices -> CmsPdf).
  *
- * Alle Parameter sind optional. Der 'do'-Parameter ist der, der ohne Schlüssel
- * angegeben werden darf: (CMS:PDF_PAGE brief.pdf). Maße in mm, Schriftgrößen in Punkt,
- * Farben sind Farbfelder aus PDF_COLOR, '#rrggbb' oder 'c,m,y,k'.
+ * All parameters are optional. The 'do' parameter is the one that may be given without
+ * a key: (CMS:PDF_PAGE brief.pdf). Dimensions in mm, font sizes in points,
+ * colors are color fields from PDF_COLOR, '#rrggbb' or 'c,m,y,k'.
  *
  * @see Camindo\Modules\Pdf\CmsPdf   Laufzeit
  * @see README.md                    Befehlsreferenz
@@ -22,7 +22,7 @@ $color = fn(string $description) => $param('Farbe', $description . ' Farbfeld (P
 
 return [
 
-    // Dokument
+    // Document
     // --------------------
 
     'pdf_init' => [
@@ -83,7 +83,7 @@ return [
         'include' => []
     ],
 
-    // Schrift und Farben
+    // Font and colors
     // --------------------
 
     'pdf_font' => [
@@ -139,7 +139,7 @@ return [
         'include' => []
     ],
 
-    // Inhalte
+    // Content
     // --------------------
 
     'pdf_text' => [
@@ -222,7 +222,7 @@ return [
         'include' => []
     ],
 
-    // Tabellen
+    // Tables
     // --------------------
 
     'pdf_table' => [
