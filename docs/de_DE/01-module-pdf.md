@@ -7,7 +7,7 @@ einem Briefbogen, mit Textblöcken, HTML, Bildern, Linien, Rechtecken und Tabell
 oder CMYK, und schicken es an den Browser. Grundlage ist
 [tc-lib-pdf](https://github.com/tecnickcom/tc-lib-pdf), der Nachfolger von TCPDF.
 
-```
+```cms
 (CMS:PDF_INIT colorspace=CMYK margins=25,20,30,20)
 (CMS:PDF_COLOR hausfarbe rgb=#0066FF cmyk=100,60,0,0)
 (CMS:PDF_META title="Rechnung 4711" author="Muster GmbH")
@@ -25,9 +25,20 @@ oder CMYK, und schicken es an den Browser. Grundlage ist
 (CMS:PDF_PRINT rechnung-4711.pdf)
 ```
 
-Weitere Kapitel:
+## Inhalt
 
-- [Befehle](./02-befehle.md) – alle Befehle `(CMS:PDF_*)` mit ihren Parametern
+1. Zusatzmodul PDF (diese Seite)
+   - [Installation](#installation)
+   - [Verzeichnisse](#verzeichnisse-varmodulespdf) – PDF-Vorlagen, Schriften, Farbprofile
+   - [Konventionen](#konventionen) – Maße, Parameter, Farben
+   - [Fehler](#fehler)
+   - [So hängt sich das Modul in den Template-Compiler](#so-hängt-sich-das-modul-in-den-template-compiler)
+   - [Lizenz](#lizenz)
+2. [Befehle](./02-befehle.md) – alle Befehle `(CMS:PDF_*)` mit ihren Parametern
+   - [Dokument](./02-befehle.md#dokument)
+   - [Schrift und Farben](./02-befehle.md#schrift-und-farben)
+   - [Inhalt](./02-befehle.md#inhalt) – Text, HTML, Bilder, Linien, Rechtecke
+   - [Tabellen](./02-befehle.md#tabellen)
 
 ## Installation
 
@@ -38,7 +49,7 @@ php Core/cron/camindo.php component install Pdf --activate
 
 `composer require` legt das Modul nach `Modules/Pdf/` und tc-lib-pdf nach `vendor/`;
 `component install` legt `var/modules/pdf/{fonts,layouts,profiles}` an und kopiert die
-14 Standardschriften von PDF nach `var/modules/pdf/fonts/core/`. Voraussetzung: PHP 8.2
+14 Standardschriften von PDF nach `var/modules/pdf/fonts/core/`. Voraussetzung: PHP 8.3
 und die Erweiterung `zlib`.
 
 ## Verzeichnisse (`var/modules/pdf/`)
