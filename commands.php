@@ -11,6 +11,11 @@
  * a key: (CMS:PDF_PAGE brief.pdf). Dimensions in mm, font sizes in points,
  * colors are color fields from PDF_COLOR, '#rrggbb' or 'c,m,y,k'.
  *
+ * Texts are snippets of this module (backend/lang/{lang}.ini): note #pdf.cmd_{command},
+ * description #pdf.cmd_{command}__{parameter}, value #pdf.cmdval_{hint} or the shared core
+ * vocabulary #template.cmdval_{hint}. Syntax hints ('P / L', 'mm', '#rrggbb' - no snippet,
+ * see Template::commandText()) and real default values stay literal.
+ *
  * @see Camindo\Modules\Pdf\CmsPdf   Laufzeit
  * @see README.md                    Befehlsreferenz
  */
@@ -18,7 +23,7 @@
 $param = fn(string $value, string $description, string $default = '') => [
     'mandatory' => false, 'subparam' => 0, 'default' => $default, 'value' => $value, 'description' => $description,
 ];
-$color = fn(string $description) => $param('Farbe', $description . ' Farbfeld (PDF_COLOR), #rrggbb oder c,m,y,k.');
+$color = fn(string $description) => $param('#pdf.cmdval_color', $description);
 
 return [
 
@@ -27,58 +32,58 @@ return [
 
     'pdf_init' => [
         'method' => 'pdf.cmsPdfInit',
-        'note' => 'Vorgaben für das Dokument: Farbraum, ICC-Profil, Seitenformat und Ränder. Vor der ersten CMS:PDF_PAGE.',
+        'note' => '#pdf.cmd_pdf_init',
         'do' => 'colorspace',
         'oneof' => '',
         'params' => [
-            'colorspace'  => $param('RGB / CMYK', 'Farbraum, in dem Farben ins PDF geschrieben werden.', 'RGB'),
-            'icc_profile' => $param('Dateiname', 'ICC-Profil aus var/modules/pdf/profiles/, wird als Output Intent eingebettet.'),
-            'output_condition' => $param('Text', 'Bezeichner der Druckbedingung für den Output Intent (z. B. FOGRA39). Ohne Angabe der Dateiname des Profils.'),
-            'format'      => $param('A4 / A5 / LETTER / ...', 'Seitenformat leerer Seiten (Namen wie in tc-lib-pdf).', 'A4'),
-            'orientation' => $param('P / L', 'Hoch- (P) oder Querformat (L) leerer Seiten.', 'P'),
-            'margins'     => $param('oben,rechts,unten,links', 'Seitenränder in mm (ein Wert: alle; zwei: oben/unten, rechts/links). Linker Rand = x-Vorgabe, rechter Rand = Breitenvorgabe, unterer Rand = Umbruchgrenze der Tabellen.', '20,20,20,20'),
+            'colorspace'  => $param('RGB / CMYK', '#pdf.cmd_pdf_init__colorspace', 'RGB'),
+            'icc_profile' => $param('#pdf.cmdval_file_name', '#pdf.cmd_pdf_init__icc_profile'),
+            'output_condition' => $param('#template.cmdval_text', '#pdf.cmd_pdf_init__output_condition'),
+            'format'      => $param('A4 / A5 / LETTER / ...', '#pdf.cmd_pdf_init__format', 'A4'),
+            'orientation' => $param('P / L', '#pdf.cmd_pdf_init__orientation', 'P'),
+            'margins'     => $param('#pdf.cmdval_margins', '#pdf.cmd_pdf_init__margins', '20,20,20,20'),
         ],
         'include' => []
     ],
 
     'pdf_meta' => [
         'method' => 'pdf.cmsPdfMeta',
-        'note' => 'Dokumenteigenschaften (werden bei CMS:PDF_PRINT geschrieben).',
+        'note' => '#pdf.cmd_pdf_meta',
         'do' => 'title',
         'oneof' => '',
         'params' => [
-            'title'    => $param('Text', 'Titel.'),
-            'author'   => $param('Text', 'Autor.'),
-            'subject'  => $param('Text', 'Thema.'),
-            'keywords' => $param('Text', 'Stichwörter.'),
-            'creator'  => $param('Text', 'Erzeugende Anwendung.', 'camindo CMS'),
+            'title'    => $param('#template.cmdval_text', '#pdf.cmd_pdf_meta__title'),
+            'author'   => $param('#template.cmdval_text', '#pdf.cmd_pdf_meta__author'),
+            'subject'  => $param('#template.cmdval_text', '#pdf.cmd_pdf_meta__subject'),
+            'keywords' => $param('#template.cmdval_text', '#pdf.cmd_pdf_meta__keywords'),
+            'creator'  => $param('#template.cmdval_text', '#pdf.cmd_pdf_meta__creator', 'camindo CMS'),
         ],
         'include' => []
     ],
 
     'pdf_page' => [
         'method' => 'pdf.cmsPdfPage',
-        'note' => 'Legt eine neue Seite an - leer oder auf einer Seite einer Layout-Vorlage. Der erste Aufruf beginnt das Dokument.',
+        'note' => '#pdf.cmd_pdf_page',
         'do' => 'layout',
         'oneof' => '',
         'params' => [
-            'layout'      => $param('Dateiname', 'PDF-Vorlage aus var/modules/pdf/layouts/, deren Seite als Hintergrund übernommen wird. Ohne Angabe eine leere Seite.'),
-            'page'        => $param('Zahl', 'Seite der Vorlage (ab 1), die übernommen wird.', '1'),
-            'format'      => $param('A4 / A5 / LETTER / ...', 'Seitenformat einer leeren Seite; sonst die Vorgabe aus PDF_INIT.'),
-            'orientation' => $param('P / L', 'Ausrichtung einer leeren Seite; sonst die Vorgabe aus PDF_INIT.'),
-            'margins'     => $param('oben,rechts,unten,links', 'Ränder nur dieser Seite; sonst die Vorgabe aus PDF_INIT.'),
+            'layout'      => $param('#pdf.cmdval_file_name', '#pdf.cmd_pdf_page__layout'),
+            'page'        => $param('#template.cmdval_number', '#pdf.cmd_pdf_page__page', '1'),
+            'format'      => $param('A4 / A5 / LETTER / ...', '#pdf.cmd_pdf_page__format'),
+            'orientation' => $param('P / L', '#pdf.cmd_pdf_page__orientation'),
+            'margins'     => $param('#pdf.cmdval_margins', '#pdf.cmd_pdf_page__margins'),
         ],
         'include' => []
     ],
 
     'pdf_print' => [
         'method' => 'pdf.cmsPdfPrint',
-        'note' => 'Sendet das Dokument an den Browser und beendet den Request. Vor CMS:PDF_PAGE darf das Template nichts ausgegeben haben.',
+        'note' => '#pdf.cmd_pdf_print',
         'do' => 'filename',
         'oneof' => '',
         'params' => [
-            'filename' => $param('Dateiname', 'Dateiname, den der Browser anzeigt bzw. beim Speichern vorschlägt.', 'document.pdf'),
-            'download' => $param('false / true / Dateiname', 'Leer oder false: im Browser anzeigen. true: als Download unter filename. Ein Dateiname: als Download unter diesem Namen.', 'false'),
+            'filename' => $param('#pdf.cmdval_file_name', '#pdf.cmd_pdf_print__filename', 'document.pdf'),
+            'download' => $param('#pdf.cmdval_download', '#pdf.cmd_pdf_print__download', 'false'),
         ],
         'include' => []
     ],
@@ -88,54 +93,54 @@ return [
 
     'pdf_font' => [
         'method' => 'pdf.cmsPdfFont',
-        'note' => 'Stellt die Schrift für die folgenden Texte und Zellen ein. Gilt über Seiten hinweg.',
+        'note' => '#pdf.cmd_pdf_font',
         'do' => 'font',
         'oneof' => '',
         'params' => [
-            'font'  => $param('Schriftname', 'Name einer Schrift aus var/modules/pdf/fonts/ ({name}.json; mitgeliefert: helvetica, times, courier, symbol, zapfdingbats). Eine Datei {name}.ttf/.otf wird beim ersten Aufruf konvertiert.', 'helvetica'),
-            'style' => $param('B / I / U / D / O, kombinierbar', 'Schriftschnitt: B fett, I kursiv, U unterstrichen, D durchgestrichen, O überstrichen. Leer = regulär.'),
-            'size'  => $param('Punkt', 'Schriftgröße in Punkt.', '12'),
+            'font'  => $param('#pdf.cmdval_font_name', '#pdf.cmd_pdf_font__font', 'helvetica'),
+            'style' => $param('#pdf.cmdval_font_style', '#pdf.cmd_pdf_font__style'),
+            'size'  => $param('#pdf.cmdval_points', '#pdf.cmd_pdf_font__size', '12'),
         ],
         'include' => []
     ],
 
     'pdf_color' => [
         'method' => 'pdf.cmsPdfColor',
-        'note' => 'Definiert ein Farbfeld mit RGB- und/oder CMYK-Wert. Der Farbraum des Dokuments (PDF_INIT) wählt den Wert; ein fehlender wird umgerechnet.',
+        'note' => '#pdf.cmd_pdf_color',
         'do' => 'name',
         'oneof' => '',
         'params' => [
-            'name' => $param('Name', 'Name des Farbfelds (Buchstaben, Ziffern, _ und -).'),
-            'rgb'  => $param('#rrggbb', 'RGB-Wert als Hex-Farbe, z. B. #0066FF.'),
-            'cmyk' => $param('c,m,y,k', 'CMYK-Wert in Prozent, z. B. 0,100,100,0.'),
+            'name' => $param('#pdf.cmdval_name', '#pdf.cmd_pdf_color__name'),
+            'rgb'  => $param('#rrggbb', '#pdf.cmd_pdf_color__rgb'),
+            'cmyk' => $param('c,m,y,k', '#pdf.cmd_pdf_color__cmyk'),
         ],
         'include' => []
     ],
 
     'pdf_text_color' => [
         'method' => 'pdf.cmsPdfTextColor',
-        'note' => 'Textfarbe für die folgenden CMS:PDF_TEXT und Zellen. Ohne Angabe Schwarz.',
+        'note' => '#pdf.cmd_pdf_text_color',
         'do' => 'name',
         'oneof' => '',
-        'params' => ['name' => $color('Textfarbe.')],
+        'params' => ['name' => $color('#pdf.cmd_pdf_text_color__name')],
         'include' => []
     ],
 
     'pdf_fill_color' => [
         'method' => 'pdf.cmsPdfFillColor',
-        'note' => 'Füllfarbe für die folgenden CMS:PDF_RECT. Ohne Angabe Schwarz.',
+        'note' => '#pdf.cmd_pdf_fill_color',
         'do' => 'name',
         'oneof' => '',
-        'params' => ['name' => $color('Füllfarbe.')],
+        'params' => ['name' => $color('#pdf.cmd_pdf_fill_color__name')],
         'include' => []
     ],
 
     'pdf_line_color' => [
         'method' => 'pdf.cmsPdfLineColor',
-        'note' => 'Linienfarbe für die folgenden CMS:PDF_LINE, Rahmen von CMS:PDF_RECT und Zellenrahmen. Ohne Angabe Schwarz.',
+        'note' => '#pdf.cmd_pdf_line_color',
         'do' => 'name',
         'oneof' => '',
-        'params' => ['name' => $color('Linienfarbe.')],
+        'params' => ['name' => $color('#pdf.cmd_pdf_line_color__name')],
         'include' => []
     ],
 
@@ -144,80 +149,80 @@ return [
 
     'pdf_text' => [
         'method' => 'pdf.cmsPdfText',
-        'note' => 'Schreibt einen Textblock mit Zeilenumbruch innerhalb der Breite. Der Cursor rückt unter den Block.',
+        'note' => '#pdf.cmd_pdf_text',
         'do' => 'text',
         'oneof' => '',
         'params' => [
-            'text'       => $param('Text', 'Der Text (UTF-8; Zeilenumbrüche werden umgebrochen). Leer = keine Ausgabe.'),
-            'x'          => $param('mm', 'Abstand vom linken Seitenrand; ohne Angabe der linke Rand.'),
-            'y'          => $param('mm', 'Abstand vom oberen Seitenrand (Oberkante des Blocks); ohne Angabe der Cursor.'),
-            'width'      => $param('mm', 'Breite des Blocks; 0 = bis zum rechten Rand.', '0'),
-            'align'      => $param('L / C / R / J', 'Ausrichtung: links, zentriert, rechts, Blocksatz.', 'L'),
-            'size'       => $param('Punkt', 'Schriftgröße nur für diesen Block; sonst die von CMS:PDF_FONT.'),
-            'color'      => $color('Textfarbe nur für diesen Block; sonst CMS:PDF_TEXT_COLOR.'),
-            'background' => $color('Hintergrundfarbe des Blocks.'),
+            'text'       => $param('#template.cmdval_text', '#pdf.cmd_pdf_text__text'),
+            'x'          => $param('mm', '#pdf.cmd_pdf_text__x'),
+            'y'          => $param('mm', '#pdf.cmd_pdf_text__y'),
+            'width'      => $param('mm', '#pdf.cmd_pdf_text__width', '0'),
+            'align'      => $param('L / C / R / J', '#pdf.cmd_pdf_text__align', 'L'),
+            'size'       => $param('#pdf.cmdval_points', '#pdf.cmd_pdf_text__size'),
+            'color'      => $color('#pdf.cmd_pdf_text__color'),
+            'background' => $color('#pdf.cmd_pdf_text__background'),
         ],
         'include' => []
     ],
 
     'pdf_html' => [
         'method' => 'pdf.cmsPdfHtml',
-        'note' => 'Schreibt einen HTML-Block (Umbruch und Seitenumbruch durch tc-lib-pdf). Der Cursor bleibt stehen - die Höhe des Blocks ist nicht bekannt.',
+        'note' => '#pdf.cmd_pdf_html',
         'do' => 'html',
         'oneof' => '',
         'params' => [
-            'html'  => $param('HTML', 'Der HTML-Code (Textauszeichnung, Listen, Tabellen, Inline-CSS).'),
-            'x'     => $param('mm', 'Abstand vom linken Seitenrand; ohne Angabe der linke Rand.'),
-            'y'     => $param('mm', 'Abstand vom oberen Seitenrand; ohne Angabe der Cursor.'),
-            'width' => $param('mm', 'Breite des Blocks; 0 = bis zum rechten Rand.', '0'),
+            'html'  => $param('#template.cmdval_html_code', '#pdf.cmd_pdf_html__html'),
+            'x'     => $param('mm', '#pdf.cmd_pdf_html__x'),
+            'y'     => $param('mm', '#pdf.cmd_pdf_html__y'),
+            'width' => $param('mm', '#pdf.cmd_pdf_html__width', '0'),
         ],
         'include' => []
     ],
 
     'pdf_image' => [
         'method' => 'pdf.cmsPdfImage',
-        'note' => 'Platziert ein Bild (JPEG, PNG, GIF, ...) aus dem Medienverzeichnis. Der Cursor rückt unter das Bild.',
+        'note' => '#pdf.cmd_pdf_image',
         'do' => 'file',
         'oneof' => '',
         'params' => [
-            'file'   => $param('Pfad', 'Bilddatei: absoluter Pfad aus (CMS:MEDIA subfield=file), Webpfad aus subfield=path oder Pfad relativ zu public/media. Nur Dateien unterhalb des Medienverzeichnisses.'),
-            'x'      => $param('mm', 'Abstand vom linken Seitenrand; ohne Angabe der linke Rand.'),
-            'y'      => $param('mm', 'Abstand vom oberen Seitenrand; ohne Angabe der Cursor.'),
-            'width'  => $param('mm', 'Breite; 0 = aus der Höhe (bzw. aus den Pixeln bei 72 dpi, wenn beide fehlen).', '0'),
-            'height' => $param('mm', 'Höhe; 0 = proportional zur Breite.', '0'),
-            'link'   => $param('URL', 'Verweis, der beim Klick auf das Bild geöffnet wird.'),
+            'file'   => $param('#pdf.cmdval_path', '#pdf.cmd_pdf_image__file'),
+            'x'      => $param('mm', '#pdf.cmd_pdf_image__x'),
+            'y'      => $param('mm', '#pdf.cmd_pdf_image__y'),
+            'width'  => $param('mm', '#pdf.cmd_pdf_image__width', '0'),
+            'height' => $param('mm', '#pdf.cmd_pdf_image__height', '0'),
+            'link'   => $param('URL', '#pdf.cmd_pdf_image__link'),
         ],
         'include' => []
     ],
 
     'pdf_line' => [
         'method' => 'pdf.cmsPdfLine',
-        'note' => 'Zeichnet eine Linie.',
+        'note' => '#pdf.cmd_pdf_line',
         'oneof' => '',
         'params' => [
-            'x1'    => $param('mm', 'Startpunkt, Abstand von links.', '0'),
-            'y1'    => $param('mm', 'Startpunkt, Abstand von oben.', '0'),
-            'x2'    => $param('mm', 'Endpunkt, Abstand von links.', '0'),
-            'y2'    => $param('mm', 'Endpunkt, Abstand von oben.', '0'),
-            'width' => $param('mm', 'Liniendicke.', '0.2'),
-            'color' => $color('Linienfarbe; sonst CMS:PDF_LINE_COLOR.'),
+            'x1'    => $param('mm', '#pdf.cmd_pdf_line__x1', '0'),
+            'y1'    => $param('mm', '#pdf.cmd_pdf_line__y1', '0'),
+            'x2'    => $param('mm', '#pdf.cmd_pdf_line__x2', '0'),
+            'y2'    => $param('mm', '#pdf.cmd_pdf_line__y2', '0'),
+            'width' => $param('mm', '#pdf.cmd_pdf_line__width', '0.2'),
+            'color' => $color('#pdf.cmd_pdf_line__color'),
         ],
         'include' => []
     ],
 
     'pdf_rect' => [
         'method' => 'pdf.cmsPdfRect',
-        'note' => 'Zeichnet ein Rechteck, umrandet und/oder gefüllt.',
+        'note' => '#pdf.cmd_pdf_rect',
         'oneof' => '',
         'params' => [
-            'x'          => $param('mm', 'Linke Kante.', '0'),
-            'y'          => $param('mm', 'Obere Kante.', '0'),
-            'width'      => $param('mm', 'Breite.', '0'),
-            'height'     => $param('mm', 'Höhe.', '0'),
-            'style'      => $param('D / F / DF', 'D Rahmen, F Füllung, DF beides.', 'D'),
-            'color'      => $color('Füllfarbe; sonst CMS:PDF_FILL_COLOR.'),
-            'border'     => $color('Rahmenfarbe; sonst CMS:PDF_LINE_COLOR.'),
-            'line_width' => $param('mm', 'Rahmendicke.', '0.2'),
+            'x'          => $param('mm', '#pdf.cmd_pdf_rect__x', '0'),
+            'y'          => $param('mm', '#pdf.cmd_pdf_rect__y', '0'),
+            'width'      => $param('mm', '#pdf.cmd_pdf_rect__width', '0'),
+            'height'     => $param('mm', '#pdf.cmd_pdf_rect__height', '0'),
+            'style'      => $param('D / F / DF', '#pdf.cmd_pdf_rect__style', 'D'),
+            'color'      => $color('#pdf.cmd_pdf_rect__color'),
+            'border'     => $color('#pdf.cmd_pdf_rect__border'),
+            'line_width' => $param('mm', '#pdf.cmd_pdf_rect__line_width', '0.2'),
         ],
         'include' => []
     ],
@@ -227,57 +232,57 @@ return [
 
     'pdf_table' => [
         'method' => 'pdf.cmsPdfTable',
-        'note' => 'Beginnt eine Tabelle; Zeilen und Zellen folgen mit CMS:PDF_ROW / CMS:PDF_CELL, gezeichnet wird bei CMS:PDF_TABLE_END. Zeilen werden nie geteilt: was nicht mehr auf die Seite passt, beginnt auf einer Folgeseite, Kopfzeilen werden dort wiederholt.',
+        'note' => '#pdf.cmd_pdf_table',
         'do' => 'cols',
         'oneof' => '',
         'params' => [
-            'cols'         => $param('b1,b2,...', 'Spaltenbreiten in mm, kommasepariert.'),
-            'x'            => $param('mm', 'Linke Kante; ohne Angabe der linke Rand.'),
-            'y'            => $param('mm', 'Obere Kante; ohne Angabe der Cursor.'),
-            'padding'      => $param('oben,rechts,unten,links', 'Innenabstand aller Zellen in mm (ein Wert: alle; zwei: oben/unten, rechts/links).', '1'),
-            'border_width' => $param('mm', 'Rahmendicke der Zellen.', '0.2'),
-            'next_layout'  => $param('Dateiname', 'Layout-Vorlage der Folgeseiten bei Seitenumbruch; sonst wie die letzte CMS:PDF_PAGE (leer = leere Seite).'),
-            'next_page'    => $param('Zahl', 'Seite der Vorlage für Folgeseiten.'),
+            'cols'         => $param('#pdf.cmdval_column_widths', '#pdf.cmd_pdf_table__cols'),
+            'x'            => $param('mm', '#pdf.cmd_pdf_table__x'),
+            'y'            => $param('mm', '#pdf.cmd_pdf_table__y'),
+            'padding'      => $param('#pdf.cmdval_margins', '#pdf.cmd_pdf_table__padding', '1'),
+            'border_width' => $param('mm', '#pdf.cmd_pdf_table__border_width', '0.2'),
+            'next_layout'  => $param('#pdf.cmdval_file_name', '#pdf.cmd_pdf_table__next_layout'),
+            'next_page'    => $param('#template.cmdval_number', '#pdf.cmd_pdf_table__next_page'),
         ],
         'include' => []
     ],
 
     'pdf_row' => [
         'method' => 'pdf.cmsPdfRow',
-        'note' => 'Beginnt eine Tabellenzeile.',
+        'note' => '#pdf.cmd_pdf_row',
         'oneof' => '',
         'params' => [
-            'is_header'     => $param('true / false', 'Kopfzeile: wird nach einem Seitenumbruch auf der Folgeseite wiederholt.', 'false'),
-            'keep_together' => $param('true / false', 'Zeile nicht über Seiten teilen. Derzeit werden Zeilen grundsätzlich nicht geteilt; der Parameter ist für spätere Versionen reserviert.', 'true'),
+            'is_header'     => $param('true / false', '#pdf.cmd_pdf_row__is_header', 'false'),
+            'keep_together' => $param('true / false', '#pdf.cmd_pdf_row__keep_together', 'true'),
         ],
         'include' => []
     ],
 
     'pdf_cell' => [
         'method' => 'pdf.cmsPdfCell',
-        'note' => 'Zelle der aktuellen Zeile. Schrift ist die zu diesem Zeitpunkt eingestellte (CMS:PDF_FONT).',
+        'note' => '#pdf.cmd_pdf_cell',
         'do' => 'text',
         'oneof' => '',
         'params' => [
-            'text'         => $param('Text', 'Zelltext; bricht innerhalb der Spalte um, soweit fit= ihn nicht einpasst.'),
-            'col'          => $param('Zahl', 'Spaltenindex ab 0; ohne Angabe die nächste Spalte.'),
-            'align'        => $param('L / C / R / J', 'Horizontale Ausrichtung.', 'L'),
-            'valign'       => $param('T / C / B', 'Vertikale Ausrichtung in der Zeile.', 'T'),
-            'fit'          => $param('none / scale / fontsize / spacing / force', 'Text auf eine Zeile in der Spaltenbreite einpassen: fontsize verkleinert die Schrift (bis min_size), spacing verringert den Zeichenabstand, scale beides, force staucht horizontal. Was auch so nicht passt, bricht um.', 'none'),
-            'min_size'     => $param('Punkt', 'Kleinste Schriftgröße beim Einpassen.', '6'),
-            'border'       => $param('LTRB / 1 / 0', 'Rahmenseiten: L links, T oben, R rechts, B unten; 1 alle, 0 keine.', '1'),
-            'border_width' => $param('mm', 'Rahmendicke; sonst die der Tabelle.'),
-            'border_color' => $color('Rahmenfarbe; sonst CMS:PDF_LINE_COLOR.'),
-            'padding'      => $param('oben,rechts,unten,links', 'Innenabstand dieser Zelle; sonst der der Tabelle.'),
-            'color'        => $color('Textfarbe; sonst CMS:PDF_TEXT_COLOR.'),
-            'background'   => $color('Hintergrundfarbe der Zelle.'),
+            'text'         => $param('#template.cmdval_text', '#pdf.cmd_pdf_cell__text'),
+            'col'          => $param('#template.cmdval_number', '#pdf.cmd_pdf_cell__col'),
+            'align'        => $param('L / C / R / J', '#pdf.cmd_pdf_cell__align', 'L'),
+            'valign'       => $param('T / C / B', '#pdf.cmd_pdf_cell__valign', 'T'),
+            'fit'          => $param('none / scale / fontsize / spacing / force', '#pdf.cmd_pdf_cell__fit', 'none'),
+            'min_size'     => $param('#pdf.cmdval_points', '#pdf.cmd_pdf_cell__min_size', '6'),
+            'border'       => $param('LTRB / 1 / 0', '#pdf.cmd_pdf_cell__border', '1'),
+            'border_width' => $param('mm', '#pdf.cmd_pdf_cell__border_width'),
+            'border_color' => $color('#pdf.cmd_pdf_cell__border_color'),
+            'padding'      => $param('#pdf.cmdval_margins', '#pdf.cmd_pdf_cell__padding'),
+            'color'        => $color('#pdf.cmd_pdf_cell__color'),
+            'background'   => $color('#pdf.cmd_pdf_cell__background'),
         ],
         'include' => []
     ],
 
     'pdf_table_end' => [
         'method' => 'pdf.cmsPdfTableEnd',
-        'note' => 'Zeichnet die Tabelle. Der Cursor rückt unter die Tabelle.',
+        'note' => '#pdf.cmd_pdf_table_end',
         'oneof' => '',
         'params' => [],
         'include' => []
