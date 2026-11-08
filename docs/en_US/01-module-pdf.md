@@ -111,5 +111,7 @@ module or tc-lib-pdf. See the developer documentation of camindo CMS, chapter "T
 
 LGPL-3.0-or-later (see `LICENSE`) - tc-lib-pdf is licensed under the GNU LGPL v3,
 which this module follows. The standard font metrics in `fonts/core/` are derived from
-the Adobe Core 14 AFM files (see `fonts/core/LICENSE`). The camindo core is licensed
+the Adobe Core 14 AFM files, which Adobe expressly permits to be redistributed; they
+hold measurements only (character widths, bounding boxes), no font data. The conditions
+and the copyright notices are in `fonts/core/LICENSE`. The camindo core is licensed
 under AGPL-3.0-or-later; both licenses are compatible.

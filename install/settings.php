@@ -3,7 +3,7 @@
 // No backend (listed = false); the commands come from commands.php, their runtime
 // is CmsPdf, which Page loads as $this->pdf (developer docs, chapter 06 (Template compiler)).
 return [
-    'version'     => '1.0.1',
+    'version'     => '1.0.2',
     'type'        => 'pdf',
     'label'       => '#pdf.module_label',
     'description' => '#pdf.module_description',
